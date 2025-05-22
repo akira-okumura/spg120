@@ -128,12 +128,12 @@ class SPG120():
                 self.__controller.move(next_pos - self.__current_pos, 0)
                 self.__controller.waitForReady(10)
             else:
-                # Step backward by 800 pulses to avoid backlash.
+                # Step backward by additional 800 pulses to avoid backlash.
                 # See Page 14 of the manual M818-0129.
-                self.__controller.move(-800, 0)
+                delta = 800
+                self.__controller.move(next_pos - self.__current_pos - delta, 0)
                 self.__controller.waitForReady(10)
-                self.__current_pos -= 800
-                self.__controller.move(next_pos - self.__current_pos, 0)
+                self.__controller.move(+delta, 0)
                 self.__controller.waitForReady(10)
 
         self.__current_pos = next_pos
