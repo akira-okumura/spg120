@@ -1,5 +1,4 @@
 import enum
-import time
 import math
 
 import sigma_koki
