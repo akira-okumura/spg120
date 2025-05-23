@@ -71,8 +71,8 @@ class SPG120():
 
         m = -1
         deg = 180. / math.pi
-        # number of gratings per unit length
-        Ng = 600e3 / m if self.__dev_type == DeviceType.IR else 1200e3 / m
+        # number of gratings per meter
+        Ng = 600e3 if self.__dev_type == DeviceType.IR else 1200e3
         K = 14.4 * deg
         ConstDefK_nom = Ng * m / (2 * math.cos(K / (180 *deg) * math.pi) * 1e9)
         self.__coeff = ConstDefK_nom * (1 + self.__C2)
@@ -130,7 +130,7 @@ class SPG120():
                 raise ValueError("Wavelength must be between 0 and 2600 nm.")
 
         next_pos = self.wavelength2pulses(wavelength_in_nm)
-
+        print(f'Next Position = {next_pos} (pulses)')
         if not DISABLE_CONTROLLER:        
             if next_pos == self.__current_pos:
                 pass
