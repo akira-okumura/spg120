@@ -130,7 +130,7 @@ class SPG120():
                 raise ValueError("Wavelength must be between 0 and 2600 nm.")
 
         next_pos = self.wavelength2pulses(wavelength_in_nm)
-        print(f'Next Position = {next_pos} (pulses)')
+
         if not DISABLE_CONTROLLER:        
             if next_pos == self.__current_pos:
                 pass
