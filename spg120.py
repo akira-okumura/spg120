@@ -117,7 +117,18 @@ class SPG120():
     def changeWavelength(self, wavelength_in_nm:float):
         """ 
         Change the wavelength of the SPG120. See Page 17 of the manual M818-0129.
+        Parameters
+        ----------
+        wavelength_in_nm : float
+            The wavelength in nm.
         """
+        if self.__dev_type == DeviceType.S or self.__dev_type == DeviceType.UV:
+            if wavelength_in_nm < 0 or 1300 < wavelength_in_nm:
+                raise ValueError("Wavelength must be between 0 and 1300 nm.")
+        elif self.__dev_type == DeviceType.IR:
+            if wavelength_in_nm < 0 or 2600 < wavelength_in_nm:
+                raise ValueError("Wavelength must be between 0 and 2600 nm.")
+
         next_pos = self.wavelength2pulses(wavelength_in_nm)
 
         if not DISABLE_CONTROLLER:        
