@@ -19,7 +19,7 @@ class AT120FLC():
     """
     
     def __init__(self, controller):
-        """ 
+        """
         Initialize the AT120FLC class.
         """
         self.__controller = controller
@@ -31,15 +31,22 @@ class AT120FLC():
             self.__controller.initializeOrigin(False, True) # initialize the 2nd port
 
         self.__current_filter = 1
+        self.printCurrentFilter()
 
-    def getCurrentFilter(self):
-        """ 
+    def getCurrentFilter(self) -> int:
+        """
         Get the current filter of the AT-120FLC.
         """
         return self.__current_filter
 
-    def changeFilter(self, next_filter:int):
-        """ 
+    def printCurrentFilter(self) -> None:
+        """
+        Print the current filter of the AT-120FLC.
+        """
+        print(f'Current Filter = {self.__current_filter}')
+
+    def changeFilter(self, next_filter:int) -> None:
+        """
         Change the filter of the AT-120FLC.
         """
         if next_filter == self.__current_filter:
@@ -50,18 +57,18 @@ class AT120FLC():
 
         # filter positions are at every 60 degrees
         # 1 pulse correpsonds to 0.36 degrees
-        npulses = (next_filter - self.__current_filter) * int(60 / 0.36)
+        npulses = (next_filter - self.__current_filter) * round(60 / 0.36)
         if not DISABLE_CONTROLLER:
             self.__controller.move(0, npulses)
             self.__controller.waitForReady(10)
 
         self.__current_filter = next_filter
 
-        print(f'Current Filter = {self.__current_filter}')
+        self.printCurrentFilter()
 
-class SPG120():
+class SPG120REV():
     """
-    Class for Spectrometer SPG-120 seriese by Shimadzu.
+    Class for the spectrometer SPG-120-REV by Shimadzu.
     """
     def __init__(self, controller, dev:DeviceType, c1:float, c2:float):
         self.__controller = controller
@@ -86,10 +93,18 @@ class SPG120():
 
         self.__current_pos = 0
         self.__current_nominal_wavelength_in_nm = 0
-        self.__current_actual_wavelength_in_nm = 0
+        self.__current_actual_wavelength_in_nm = self.pulses2wavelength(self.__current_pos)
 
-    def wavelength2pulses(self, wavelength_in_nm:float):
-        """ 
+        self.printCurrentWavelength()
+
+    def printCurrentWavelength(self) -> None:
+        """
+        Print the current nominal and actual wavelengths.
+        """
+        print(f'Current Nominal and Actual Wavelengths = {self.__current_nominal_wavelength_in_nm : .3f}, {self.__current_actual_wavelength_in_nm : .3f} (nm)')
+
+    def wavelength2pulses(self, wavelength_in_nm:float) -> int:
+        """
         Convert wavelength in nm to number of pulses.
         """
         theta = math.asin(self.__coeff * wavelength_in_nm) * 180 / math.pi
@@ -98,8 +113,8 @@ class SPG120():
 
         return next_pos
     
-    def pulses2wavelength(self, pulses:int):
-        """ 
+    def pulses2wavelength(self, pulses:int) -> float:
+        """
         Convert number of pulses to wavelength in nm.
         """
         res = 0.0018 # (deg/pulse)
@@ -108,15 +123,15 @@ class SPG120():
 
         return wavelength_in_nm
     
-    def getDeviceType(self):
-        """ 
+    def getDeviceType(self) -> DeviceType:
+        """
         Get the device type.
         """
         return self.__dev_type
 
-    def changeWavelength(self, wavelength_in_nm:float):
-        """ 
-        Change the wavelength of the SPG120. See Page 17 of the manual M818-0129.
+    def changeWavelength(self, wavelength_in_nm:float) -> None:
+        """
+        Change the wavelength of the SPG120REV. See Page 17 of the manual M818-0129.
         Parameters
         ----------
         wavelength_in_nm : float
@@ -131,7 +146,7 @@ class SPG120():
 
         next_pos = self.wavelength2pulses(wavelength_in_nm)
 
-        if not DISABLE_CONTROLLER:        
+        if not DISABLE_CONTROLLER:
             if next_pos == self.__current_pos:
                 pass
             elif next_pos > self.__current_pos:
@@ -152,24 +167,55 @@ class SPG120():
 
         print(f'Current Nominal and Actual Wavelengths = {self.__current_nominal_wavelength_in_nm : .3f}, {self.__current_actual_wavelength_in_nm : .3f} (nm)')
 
-    def getCurrentActualWavelength(self):
-        """ 
+    def getCurrentActualWavelength(self) -> float:
+        """
         Get the current actual wavelength.
         """
         return self.__current_actual_wavelength_in_nm
 
-    def getCurrentNominalWavelength(self):
-        """ 
+    def getCurrentNominalWavelength(self) -> float:
+        """
         Get the current nominal wavelength.
         """
         return self.__current_nominal_wavelength_in_nm
+
+class FilterConfig():
+    """
+    Class for filter configuration.
+    """
+    def __init__(self):
+        self.__config__ = []
+
+    def addConfig(self, start_wavelength:float, end_wavelength:float, filter_number:int) -> None:
+        self.__config__.append((start_wavelength, end_wavelength, filter_number))
+
+    def getConfigList(self) -> list:
+        return self.__config__
+
+    def makeDefaultConfig(device_type:DeviceType) -> 'FilterConfig':
+        config = FilterConfig()
+        inf = float('inf')
+        if device_type == DeviceType.S or device_type == DeviceType.UV:
+            config.addConfig(-inf, 400, 1)
+            config.addConfig(400, 600, 2)
+            config.addConfig(600, 900, 3)
+            config.addConfig(900, inf, 1)
+        elif device_type == DeviceType.IR:
+            config.addConfig(-inf, 700, 1)
+            config.addCofig(700, 900, 2) # VIS2
+            config.addConfig(900, 1200, 3) # NIR1
+            config.addConfig(1200, 1700, 4) # NIR2
+            config.addConfig(1700, 2600, 5) # NIR3
+            config.addConfig(2600, inf, 1)
+
+        return config
 
 class Controller():
     """
     Class for stage controller.
     """
     def __init__(self, path, dev:DeviceType, C1, C2):
-        """ 
+        """
         Initialize the Controller class.
         
         Parameters
@@ -186,37 +232,49 @@ class Controller():
                 print(status)
                 raise ValueError("The controller status is abnormal.")
 
-        # We assume that SPG120 is connected to the first port of the controller and AT-120FLC is connected to the second port.
+        # We assume that SPG120REV is connected to the first port of the controller and AT-120FLC is connected to the second port.
         # Min/Max speeds are 200/10000 pps and acceleration time is 200 ms for the first port
         # Min/Max speeds are 100/400 pps and acceleration time is 200 ms for the second port
         # See Table 6.1 of the sample software manual M818-0126 by Shimadzu
         if not DISABLE_CONTROLLER:
             self.__shot702.setSpeed(200, 10000, 200, 100, 400, 200)
 
-        self.__spg120 = SPG120(self.__shot702, dev, C1, C2)
+        self.__spg120rev = SPG120REV(self.__shot702, dev, C1, C2)
         self.__at120flc = AT120FLC(self.__shot702)
+        self.__filter_config = FilterConfig.makeDefaultConfig(dev)
 
     def __del__(self):
-        """ 
+        """
         Destructor for the Controller class.
         """
         if not DISABLE_CONTROLLER:
             self.__shot702.close()
 
-    def getSPG120(self):
-        """ 
-        Get the SPG120 object.
+    def getSPG120REV(self):
         """
-        return self.__spg120
+        Get the SPG120REV object.
+        """
+        return self.__spg120rev
 
     def getAT120FLC(self):
-        """ 
+        """
         Get the AT120FLC object.
         """
         return self.__at120flc
 
+    def setFilterConfig(self, config:FilterConfig) -> None:
+        """
+        Set the filter configuration.
+        
+        Parameters
+        ----------
+        config : FilterConfig
+            The filter configuration.
+        """
+        self.__filter_config = config
+
     def changeWaveLength(self, wavelength_in_nm):
-        """ 
+        """"
         Change the wavelength of the spectrometer.
         
         Parameters
@@ -224,25 +282,13 @@ class Controller():
         wavelength_in_nm : float
             The wavelength in nm.
         """
-        device_type = self.__spg120.getDeviceType()
-        if device_type == DeviceType.S or device_type == DeviceType.UV:
-            if 400 < wavelength_in_nm <= 600:
-                next_filter = 2 # VIS1
-            elif 600 < wavelength_in_nm < 900:
-                next_filter = 3 # VIS2
-            else:
-                next_filter = 1
-        elif device_type == DeviceType.IR:
-            if 700 < wavelength_in_nm <= 900:
-                next_filter = 2 # VIS2
-            elif 900 < wavelength_in_nm <= 1200:
-                next_filter = 3 # NIR1
-            elif 1200 < wavelength_in_nm <= 1700:
-                next_filter = 4 # NIR2
-            elif 1700 < wavelength_in_nm <= 2600:
-                next_filter = 5 # NIR3
-            else:
-                next_filter = 1
+        configList = self.__filter_config.getConfigList()
+
+        for i in range(len(configList)):
+            start_wavelength, end_wavelength, filter_number = configList[i]
+            if start_wavelength < wavelength_in_nm <= end_wavelength:
+                next_filter = filter_number
+                break
 
         self.__at120flc.changeFilter(next_filter)
-        self.__spg120.changeWavelength(wavelength_in_nm)
+        self.__spg120rev.changeWavelength(wavelength_in_nm)
