@@ -76,6 +76,7 @@ class SPG120REV():
         self.__C1 = c1 # Calibration parameter C1, offset pulse
         self.__C2 = c2 # Calibration parameter C2, optical mount correction coefficient
 
+        # To understand the following values and equations, refere to Page 8 of the manual M818-0129 by Shimadzu.
         m = -1
         deg = 180. / math.pi
         # number of gratings per meter
@@ -113,12 +114,12 @@ class SPG120REV():
 
         return next_pos
     
-    def pulses2wavelength(self, pulses:int) -> float:
+    def pulses2wavelength(self, npulses:int) -> float:
         """
         Convert number of pulses to wavelength in nm.
         """
         res = 0.0018 # (deg/pulse)
-        theta = -1 * pulses * res
+        theta = -1 * npulses * res
         wavelength_in_nm = math.sin(theta / 180 * math.pi) / self.__coeff
 
         return wavelength_in_nm
@@ -187,6 +188,23 @@ class FilterConfig():
         self.__config__ = []
 
     def addConfig(self, start_wavelength:float, end_wavelength:float, filter_number:int) -> None:
+        """
+        Add a filter configuration to specify the wavelength range and corresponding filter number.
+
+        Parameters
+        ----------
+        start_wavelength : float
+            The start wavelength in nm.
+        end_wavelength : float
+            The end wavelength in nm.
+        filter_number : int 
+            The filter number (1-6).
+        """
+        if start_wavelength < 0 or end_wavelength < start_wavelength:
+            raise ValueError("Start wavelength must be less than end wavelength and both must be non-negative.")
+        if filter_number < 1 or filter_number > 6:
+            raise ValueError("Filter number must be between 1 and 6.")
+
         self.__config__.append((start_wavelength, end_wavelength, filter_number))
 
     def getConfigList(self) -> list:
@@ -273,7 +291,7 @@ class Controller():
         """
         self.__filter_config = config
 
-    def changeWaveLength(self, wavelength_in_nm):
+    def changeWaveLength(self, wavelength_in_nm:float):
         """"
         Change the wavelength of the spectrometer.
         
