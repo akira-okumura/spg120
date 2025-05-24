@@ -8,6 +8,9 @@ The developer owns only SPG-120UV-REV and AT-120FLC, which were tested with this
 
 We use `PySigmaKoki` to controll SHOT702H or SHOT702 via `pyserial`.
 
+## Installation
+`pip install spg120`
+
 ## Basic usage
 ```
 import spg120
