@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spg120"
-version = "0.2.1"
+version = "0.2.2"
 description = "Python interface for Spectrometer SPG 120 by Shimadzu"
 authors = [
     { name = "Akira Okumura", email = "oxon@mac.com" }
@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 dependencies = [
-    "pysigmakoki>2.1.4"
+    "pysigmakoki>=2.1.7"
 ]
 
 [project.urls]
